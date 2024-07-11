@@ -11,12 +11,14 @@ import os
 load_dotenv()
 
 API_KEY = os.getenv("API_KEY")
+ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN")
 api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 
 app = FastAPI()
 origins = [
     "http://localhost",
     "http://localhost:3200",
+    ALLOWED_ORIGIN
 ]
 
 app.add_middleware(
