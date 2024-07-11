@@ -34,7 +34,7 @@ export function Fourier() {
 
     try {
       const response = await fetch(
-        "http://localhost:8000/harmonic-components/",
+        `${process.env.NEXT_PUBLIC_API_URL}/harmonic-components/`,
         {
           method: "POST",
           body: formData,
