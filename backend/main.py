@@ -1,10 +1,8 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Security, Depends
+from fastapi import FastAPI, HTTPException, Security, Depends, Body
 from fastapi.security.api_key import APIKeyHeader, APIKey
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-import pandas as pd
 import numpy as np
-import io
 import os
 
 # Load environment variables from .env file
@@ -18,7 +16,6 @@ app = FastAPI()
 origins = [
     "http://localhost",
     "http://localhost:3200",
-    "https://regression-mu.vercel.app/",
     ALLOWED_ORIGIN
 ]
 
@@ -67,33 +64,16 @@ def calculate_harmonic_components(precipitation_data):
     return frequencies.tolist(), amplitudes.tolist(), phases.tolist()
 
 
-@app.post("/harmonic-components/")
+@app.post("/")
 async def get_harmonic_components(
-    file: UploadFile = File(...), 
+    precipitation_data: list[float] = Body(...), 
     api_key: APIKey = Depends(get_api_key)
 ):
-    # Load the uploaded Excel file
-    contents = await file.read()
-    df = pd.read_excel(io.BytesIO(contents), header=None)
-
-    # Extract columns B to M (which correspond to columns 1 to 12 in zero-based indexing)
-    columns_b_to_m = df.iloc[:, 1:13]
-
-    # Convert the DataFrame to a two-dimensional array (list of lists)
-    array_2d = columns_b_to_m.values.tolist()
-
-    # Flatten the two-dimensional array to a single time series
-    flattened_data = np.array(array_2d).flatten()
-
     # Calculate harmonic components
-    frequencies, amplitudes, phases = calculate_harmonic_components(flattened_data)
+    frequencies, amplitudes, phases = calculate_harmonic_components(precipitation_data)
 
     return {
         "frequencies": frequencies,
         "amplitudes": amplitudes,
         "phases": phases
     }
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)

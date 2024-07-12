@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { CopyToClipboard } from "./lukacho/copy-to-clipboard";
+import Papa from "papaparse";
 
 interface Data {
   frequencies: number[];
@@ -13,12 +14,14 @@ interface Data {
 }
 
 export function Fourier() {
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<File | null>(null);
   const [response, setResponse] = useState<Data>();
   const [loading, setLoading] = useState(false);
 
-  const handleFileChange = (e: any) => {
-    setFile(e.target.files[0]);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFile(e.target.files[0]);
+    }
   };
 
   const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -26,35 +29,41 @@ export function Fourier() {
     setLoading(true);
     if (!file) {
       alert("Please select a file first.");
+      setLoading(false);
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
+    Papa.parse(file, {
+      complete: async (results) => {
+        const data = results.data as number[][];
 
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/harmonic-components/`,
-        {
-          method: "POST",
-          body: formData,
-          headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
-          },
+        // Extract columns B to M (which correspond to columns 1 to 13 in zero-based indexing)
+        const columnsBtoM = data.map((row) => row.slice(1, 13)).flat();
+
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
+            },
+            body: JSON.stringify(columnsBtoM),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setResponse(data);
+          } else {
+            console.error("Error:", response.statusText);
+          }
+        } catch (error) {
+          console.error("Error:", error);
+        } finally {
+          setLoading(false);
         }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setResponse(data);
-      } else {
-        console.error("Error:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
+      },
+      header: false,
+    });
   };
 
   return (
@@ -69,8 +78,8 @@ export function Fourier() {
         >
           <Input
             type="file"
-            accept=".xlsx"
-            placeholder="Select a xslx file"
+            accept=".csv"
+            placeholder="Select a csv file"
             onChange={handleFileChange}
             className="flex-1 h-full"
           />
