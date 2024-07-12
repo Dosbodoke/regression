@@ -18,6 +18,7 @@ app = FastAPI()
 origins = [
     "http://localhost",
     "http://localhost:3200",
+    "https://regression-mu.vercel.app/",
     ALLOWED_ORIGIN
 ]
 
