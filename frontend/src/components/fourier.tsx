@@ -39,7 +39,6 @@ export function Fourier() {
           method: "POST",
           body: formData,
           headers: {
-            Accept: "application/json",
             Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
           },
         }
