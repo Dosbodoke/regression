@@ -69,11 +69,11 @@ export function Fourier() {
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
       <div className="flex flex-col items-center gap-6 mb-8">
-        <h1 className="text-2xl font-bold">
-          Análise de regressão periódica da precipitação mensal,
+        <h1 className="text-2xl font-bold text-center">
+          Análise de regressão periódica da precipitação mensal
         </h1>
         <form
-          className="flex items-center gap-4 w-full max-w-md"
+          className="flex flex-col gap-4 w-full max-w-md"
           onSubmit={handleUpload}
         >
           <Input
