@@ -4,9 +4,24 @@ import { useState } from "react";
 import Papa from "papaparse";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
 import { CopyToClipboard } from "./lukacho/copy-to-clipboard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "./ui/skeleton";
@@ -16,6 +31,21 @@ interface Data {
   amplitudes: number[];
   phases: number[];
 }
+
+const months = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 export function Fourier() {
   const [file, setFile] = useState<File | null>(null);
@@ -113,22 +143,22 @@ export function Fourier() {
         <LoadingSkeleton />
       ) : (
         <>
-          <div className="flex flex-col items-center gap-6 mb-8">
-            {/* Your existing content here */}
-          </div>
           {response ? (
             <div className="flex flex-col gap-4">
+              <SpectralPlot
+                data={response.frequencies.map((freq, index) => ({
+                  month: months[index % 12], // Cycles through the months array
+                  frequency: freq,
+                  amplitude: response.amplitudes[index],
+                  phase: response.phases[index],
+                }))}
+              />
               <DataCard title="Fases" data={response.phases} />
               <DataCard title="Frequencias" data={response.frequencies} />
               <DataCard title="Amplitudes" data={response.amplitudes} />
               <DataCard title="Anos analisados" data={years} />
             </div>
           ) : null}
-          {years.length > 0 && (
-            <div className="flex flex-col gap-4 mt-8">
-              {/* Years card here */}
-            </div>
-          )}
         </>
       )}
     </div>
@@ -182,5 +212,80 @@ const DataSkeleton = ({ title }: { title: string }) => {
       </h3>
       <Skeleton className="h-40 w-full" /> {/* Data content skeleton */}
     </div>
+  );
+};
+
+const SpectralPlot = ({
+  data,
+}: {
+  data: Array<{
+    month: string;
+    frequency: number;
+    amplitude: number;
+    phase: number;
+  }>;
+}) => {
+  const chartConfig = {
+    frequency: {
+      label: "Frequência",
+      color: "hsl(var(--chart-4))",
+    },
+    amplitude: {
+      label: "Amplitude",
+      color: "hsl(var(--chart-2))",
+    },
+    phase: {
+      label: "Fase",
+      color: "hsl(var(--chart-3))",
+    },
+  } satisfies ChartConfig;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle></CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer config={chartConfig}>
+          <LineChart
+            accessibilityLayer
+            margin={{
+              left: 12,
+              right: 12,
+            }}
+            data={data}
+          >
+            <CartesianGrid vertical={false} />
+            <XAxis dataKey="month" label="mês" tickMargin={20} />
+            <Line
+              type="monotone"
+              dataKey="frequency"
+              stroke={chartConfig.frequency.color}
+              strokeWidth={2}
+              yAxisId="left"
+            />
+            <Line
+              type="monotone"
+              dataKey="amplitude"
+              stroke={chartConfig.amplitude.color}
+              strokeWidth={2}
+              yAxisId="left"
+            />
+            <Line
+              type="monotone"
+              dataKey="phase"
+              stroke={chartConfig.phase.color}
+              strokeWidth={2}
+              yAxisId="right"
+            />
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent indicator="dot" />}
+            />
+            <ChartLegend content={<ChartLegendContent />} />
+          </LineChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
   );
 };
