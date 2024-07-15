@@ -153,10 +153,10 @@ export function Fourier() {
                   phase: response.phases[index],
                 }))}
               />
-              <DataCard title="Fases" data={response.phases} />
-              <DataCard title="Frequencias" data={response.frequencies} />
-              <DataCard title="Amplitudes" data={response.amplitudes} />
               <DataCard title="Anos analisados" data={years} />
+              <DataCard title="Fases" data={response.phases} />
+              <DataCard title="Frequências" data={response.frequencies} />
+              <DataCard title="Amplitudes" data={response.amplitudes} />
             </div>
           ) : null}
         </>
