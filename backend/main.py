@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import numpy as np
 import os
+from typing import List
 
 # Load environment variables from .env file
 load_dotenv()
@@ -66,7 +67,7 @@ def calculate_harmonic_components(precipitation_data):
 
 @app.post("/")
 async def get_harmonic_components(
-    precipitation_data: list[float] = Body(...), 
+    precipitation_data: List[float] = Body(...),
     api_key: APIKey = Depends(get_api_key)
 ):
     # Calculate harmonic components
