@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { CopyToClipboard } from "./lukacho/copy-to-clipboard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "./ui/skeleton";
 
 interface Data {
   frequencies: number[];
@@ -73,8 +74,10 @@ export function Fourier() {
             console.error("Error:", errorMessage);
           }
         } catch (error) {
-          setError(`Error: ${error.message}`);
-          console.error("Error:", error);
+          if (error instanceof Error) {
+            setError(`Error: ${error.message}`);
+            console.error("Error:", error);
+          }
         } finally {
           setLoading(false);
         }
@@ -106,29 +109,27 @@ export function Fourier() {
         </form>
         {error && <ErrorAlert error={error} />}
       </div>
-      {response ? (
-        <div className="flex flex-col gap-4">
-          <DataCard title="Fases" data={response.phases} />
-          <DataCard title="Frequencias" data={response.frequencies} />
-          <DataCard title="Amplitudes" data={response.amplitudes} />
-        </div>
-      ) : null}
-      {years.length > 0 && (
-        <div className="flex flex-col gap-4 mt-8">
-          <Card>
-            <CardHeader className="flex flex-row justify-between items-center">
-              <CardTitle>Anos analisados</CardTitle>
-              <CopyToClipboard copy={years.toString()} />
-            </CardHeader>
-            <CardContent className="overflow-hidden">
-              <div className="p-2 rounded-md bg-foreground text-primary-foreground overflow-x-auto max-h-64">
-                {years.map((year) => (
-                  <span key={year}>{year}, </span>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {loading ? (
+        <LoadingSkeleton />
+      ) : (
+        <>
+          <div className="flex flex-col items-center gap-6 mb-8">
+            {/* Your existing content here */}
+          </div>
+          {response ? (
+            <div className="flex flex-col gap-4">
+              <DataCard title="Fases" data={response.phases} />
+              <DataCard title="Frequencias" data={response.frequencies} />
+              <DataCard title="Amplitudes" data={response.amplitudes} />
+              <DataCard title="Anos analisados" data={years} />
+            </div>
+          ) : null}
+          {years.length > 0 && (
+            <div className="flex flex-col gap-4 mt-8">
+              {/* Years card here */}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -159,5 +160,27 @@ const DataCard = ({ title, data }: { title: string; data: number[] }) => {
         </div>
       </CardContent>
     </Card>
+  );
+};
+
+const LoadingSkeleton = () => {
+  return (
+    <div className="flex flex-col gap-4">
+      <DataSkeleton title="Anos analisados" />
+      <DataSkeleton title="Fases" />
+      <DataSkeleton title="Frequencias" />
+      <DataSkeleton title="Amplitudes" />
+    </div>
+  );
+};
+
+const DataSkeleton = ({ title }: { title: string }) => {
+  return (
+    <div className="p-4 gap-4 flex flex-col rounded-lg border bg-card text-card-foreground shadow-sm">
+      <h3 className="text-2xl font-semibold leading-none tracking-tight">
+        {title}
+      </h3>
+      <Skeleton className="h-40 w-full" /> {/* Data content skeleton */}
+    </div>
   );
 };
