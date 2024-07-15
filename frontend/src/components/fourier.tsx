@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Papa from "papaparse";
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { CopyToClipboard } from "./lukacho/copy-to-clipboard";
-import Papa from "papaparse";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Data {
   frequencies: number[];
@@ -17,6 +20,8 @@ export function Fourier() {
   const [file, setFile] = useState<File | null>(null);
   const [response, setResponse] = useState<Data>();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [years, setYears] = useState<number[]>([]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -27,6 +32,7 @@ export function Fourier() {
   const handleUpload = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setError(null); // Reset error state
     if (!file) {
       alert("Please select a file first.");
       setLoading(false);
@@ -35,10 +41,18 @@ export function Fourier() {
 
     Papa.parse(file, {
       complete: async (results) => {
-        const data = results.data as number[][];
+        const data = results.data as any[][];
 
-        // Extract columns B to M (which correspond to columns 1 to 13 in zero-based indexing)
-        const columnsBtoM = data.map((row) => row.slice(1, 13)).flat();
+        // Use a single map to extract both yearsArray and columnsBtoM
+        const yearsArray: number[] = [];
+        const columnsBtoM: number[] = [];
+
+        data.forEach((row) => {
+          yearsArray.push(row[0]);
+          columnsBtoM.push(...row.slice(1, 13));
+        });
+
+        setYears(yearsArray);
 
         try {
           const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/`, {
@@ -54,9 +68,12 @@ export function Fourier() {
             const data = await response.json();
             setResponse(data);
           } else {
-            console.error("Error:", response.statusText);
+            const errorMessage = await response.text();
+            setError(`Error: ${response.status} - ${errorMessage}`);
+            console.error("Error:", errorMessage);
           }
         } catch (error) {
+          setError(`Error: ${error.message}`);
           console.error("Error:", error);
         } finally {
           setLoading(false);
@@ -69,11 +86,11 @@ export function Fourier() {
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
       <div className="flex flex-col items-center gap-6 mb-8">
-        <h1 className="text-2xl font-bold text-center">
-          Análise de regressão periódica da precipitação mensal
+        <h1 className="text-2xl font-bold">
+          Análise de regressão periódica da precipitação mensal,
         </h1>
         <form
-          className="flex flex-col gap-4 w-full max-w-md"
+          className="flex items-center gap-4 w-full max-w-md"
           onSubmit={handleUpload}
         >
           <Input
@@ -87,50 +104,60 @@ export function Fourier() {
             {loading ? "Analisando..." : "Analisar"}
           </Button>
         </form>
+        {error && <ErrorAlert error={error} />}
       </div>
       {response ? (
         <div className="flex flex-col gap-4">
+          <DataCard title="Fases" data={response.phases} />
+          <DataCard title="Frequencias" data={response.frequencies} />
+          <DataCard title="Amplitudes" data={response.amplitudes} />
+        </div>
+      ) : null}
+      {years.length > 0 && (
+        <div className="flex flex-col gap-4 mt-8">
           <Card>
             <CardHeader className="flex flex-row justify-between items-center">
-              <CardTitle>Fases</CardTitle>
-              <CopyToClipboard copy={response.phases.toString()} />
+              <CardTitle>Anos analisados</CardTitle>
+              <CopyToClipboard copy={years.toString()} />
             </CardHeader>
             <CardContent className="overflow-hidden">
-              <div className="p-2 rounded-md bg-foreground text-primary-foreground overflow-x-auto text-nowrap">
-                {response.phases.map((data) => (
-                  <span key={data}>{data}, </span>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row justify-between items-center">
-              <CardTitle>Frequencias</CardTitle>
-              <CopyToClipboard copy={response.frequencies.toString()} />
-            </CardHeader>
-            <CardContent className="overflow-hidden">
-              <div className="p-2 rounded-md bg-foreground text-primary-foreground overflow-x-auto text-nowrap">
-                {response.frequencies.map((data) => (
-                  <span key={data}>{data}, </span>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row justify-between items-center">
-              <CardTitle>Amplitudes</CardTitle>
-              <CopyToClipboard copy={response.amplitudes.toString()} />
-            </CardHeader>
-            <CardContent className="overflow-hidden">
-              <div className="p-2 rounded-md bg-foreground text-primary-foreground overflow-x-auto text-nowrap">
-                {response.amplitudes.map((data) => (
-                  <span key={data}>{data}, </span>
+              <div className="p-2 rounded-md bg-foreground text-primary-foreground overflow-x-auto max-h-64">
+                {years.map((year) => (
+                  <span key={year}>{year}, </span>
                 ))}
               </div>
             </CardContent>
           </Card>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
+
+const ErrorAlert = ({ error }: { error: string }) => {
+  return (
+    <Alert variant="destructive">
+      <ExclamationTriangleIcon className="h-4 w-4" />
+      <AlertTitle>Algo deu errado, contate o suporte</AlertTitle>
+      <AlertDescription>{error}</AlertDescription>
+    </Alert>
+  );
+};
+
+const DataCard = ({ title, data }: { title: string; data: number[] }) => {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row justify-between items-center">
+        <CardTitle>{title}</CardTitle>
+        <CopyToClipboard copy={data.toString()} />
+      </CardHeader>
+      <CardContent className="overflow-hidden">
+        <div className="p-2 rounded-md bg-foreground text-primary-foreground overflow-x-auto max-h-64">
+          {data.map((data) => (
+            <span key={data}>{data}, </span>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
